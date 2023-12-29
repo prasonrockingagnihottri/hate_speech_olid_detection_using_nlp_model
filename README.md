@@ -1,1 +1,1 @@
-This is a OLID NLP model for offencive level detection .
+This is a demo OLID NLP model for offencive language detection .
