@@ -439,3 +439,30 @@ co_occur.shape
 
 
 # In[318]:
+# Assuming you have features and labels ready
+X = df['clean_Tweet']  # Features
+y = df['subtask_a']  # Labels
+
+# Split the data into training and testing sets
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Vectorize the text data using TF-IDF
+from sklearn.feature_extraction.text import TfidfVectorizer
+tfidf_vectorizer = TfidfVectorizer(max_features=5000)
+X_train_tfidf = tfidf_vectorizer.fit_transform(X_train)
+X_test_tfidf = tfidf_vectorizer.transform(X_test)
+
+# Train a classifier (e.g., Support Vector Machine)
+from sklearn.svm import SVC
+clf = SVC()
+clf.fit(X_train_tfidf, y_train)
+
+# Make predictions on the test set
+predictions = clf.predict(X_test_tfidf)
+
+# Evaluate the model
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+print("Accuracy:", accuracy_score(y_test, predictions))
+print("\nClassification Report:\n", classification_report(y_test, predictions))
+print("\nConfusion Matrix:\n", confusion_matrix(y_test, predictions))
