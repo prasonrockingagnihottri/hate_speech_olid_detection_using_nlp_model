@@ -1,0 +1,447 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[281]:
+
+
+import pandas as pd
+import numpy as np
+import sklearn
+import re
+get_ipython().run_line_magic('matplotlib', 'inline')
+import matplotlib.pyplot as plt
+import seaborn as sns
+import itertools
+import collections
+from collections import Counter
+import nltk
+from nltk import word_tokenize
+from nltk.stem.porter import PorterStemmer
+from nltk.probability import FreqDist
+from nltk.tokenize import RegexpTokenizer
+import nltk.corpus
+from nltk.corpus import stopwords
+#nltk.download('stopwords')
+from nltk.tokenize import TweetTokenizer
+
+
+# In[282]:
+
+
+import re
+
+def find_retweeted(tweet):
+    '''Extracts the Twitter handles of retweeted people'''
+    return re.findall(r'(?<=RT\s)(@[A-Za-z0-9_]+)', tweet)
+
+def find_mentioned(tweet):
+    '''Extracts the Twitter handles of people mentioned in the tweet'''
+    return re.findall(r'(?<!RT\s)(@[A-Za-z0-9_]+)', tweet)
+
+def find_hashtags(tweet):
+    '''Extracts hashtags'''
+    return re.findall(r'(#[A-Za-z0-9_]+)', tweet)
+
+def remove_links(tweet):
+    '''Removes web links from the tweet'''
+    tweet = re.sub(r'http\S+', '', tweet)  # Remove http links
+    tweet = re.sub(r'bit.ly/\S+', '', tweet)  # Remove bitly links
+    tweet = tweet.strip('[link]')  # Remove [links]
+    return tweet
+
+
+# In[283]:
+
+
+import re
+from nltk.tokenize import word_tokenize
+from nltk.stem.porter import PorterStemmer
+
+def remove_users(tweet):
+    '''Takes a string and removes retweet and @user information'''
+    tweet = re.sub('(RT\s@[A-Za-z]+[A-Za-z0-9-_]+)', '', tweet) # remove retweet
+    tweet = re.sub('(@[A-Za-z]+[A-Za-z0-9-_]+)', '', tweet) # remove tweeted at
+    return tweet
+
+def stem(txt):
+    stemmer = PorterStemmer()
+    stemReview = ''
+    review = word_tokenize(txt)
+
+    for i in review:
+        i = stemmer.stem(i)
+        stemReview = stemReview + ' ' + i
+        #print(stemReview)
+    return stemReview
+
+
+# In[284]:
+
+
+import re
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
+def cleaning(intweet):
+    cleanTweet = ''
+    temptweet = word_tokenize(intweet)
+    stopword = stopwords.words('english') + ['"',"\"","n't","'s","...","!","?","I","@USER","USER","URL",".",";",":","/","\\",",","#","@","$","&",")","(","\""]
+    yesnowords = ["can", "could", "would", "is", "does", "has", "was", "were", "had", "have", "did", "are", "will"]
+    commonwords = ["the", "a", "an", "is", "are", "were", "."]
+    questionwords = ["who", "what", "where", "when", "why", "how", "whose", "which", "whom"]
+    pronouns = ["he", "she", "it", "its", "it's", "him", "her", "his","they","their","we", "our","i","you","your","my","mine","yours","ours","all", "", "he", "her", "hers", "herself", "him", "himself", "his", "", "", "it", "its", "itself", "many", "me mine", "more", "most", "much", "my", "myself", "neither", "no one", "nobody", "none", "nothing", "one", "other", "others", "our", "ours", "ourselves", "several", "she", "some", "somebody", "someone", "something", "that", "their", "theirs", "them", "themselves", "these", "they", "this", "those", "us", "we", "which",  "who", "whoever", "whom", "whose", "you", "your", "yours", "yourself", "yourselves"]
+    stopword = stopword + yesnowords + commonwords + questionwords + pronouns
+
+    cleanTweet = ' '.join(i.lower() if i.lower() not in stopword else '' for i in temptweet if re.sub(r'[^\x00-\x7F]+', ' ', re.sub(r'\d+', '', re.sub('(?:<[^>]+>)', '', re.sub(r"\s+", "", re.sub(r"[,@\"'?\.$%_]", "", i, flags=re.I))))))
+
+    return cleanTweet
+
+
+# In[285]:
+
+
+import pandas as pd
+
+# Replace '/path/to/file.csv' with the actual path to your CSV file
+df = pd.read_csv('/Users/prasonagnihottri/Downloads/OLIDv1/olid.tsv', delimiter='\t')
+
+# Check the first few rows
+df.head()
+
+
+# In[286]:
+
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Assuming df is your DataFrame and 'subtask_a' is one of the columns
+df['target_name'] = df['subtask_a'].map({'NOT': 'Not Offensive', 'OFF': 'Offensive'})
+
+# Plot the count of classes
+sns.countplot(df['target_name'])
+plt.xlabel('Classes')
+plt.ylabel('Number of Tweets')
+plt.title('Not Offensive VS Offensive')
+
+# Show the plot
+plt.show()
+
+
+# In[287]:
+
+
+import pandas as pd
+import re
+
+# Assuming df is your DataFrame and 'tweet' is one of the columns
+df['is_retweet'] = df['tweet'].str.lower().apply(lambda x: bool(re.search(r'^[r|R][t|T]', x)))
+print("Total number of retweets is " + str(sum(df['is_retweet'])) + '.')
+
+# Optional: Uncomment the line below if you want to see the value counts of the 'is_retweet' column
+# print(df['is_retweet'].value_counts())
+
+
+# In[288]:
+
+
+import pandas as pd
+
+# Assuming df is your DataFrame and 'tweet' is one of the columns
+# Define the cleaning function
+def cleaning(tweet):
+    # Your cleaning logic here
+    # For example, removing digits and converting to lowercase
+    clean_tweet = re.sub(r'\d+', '', tweet).lower()
+
+    return clean_tweet
+
+# Apply the cleaning function to the 'tweet' column
+df['clean_Tweet'] = df['tweet'].apply(cleaning)
+
+# Display the first few rows of the DataFrame with the new 'clean_Tweet' column
+df.head()
+
+
+# In[289]:
+
+
+# Stemming the tweet
+df['stem_Tweet'] = [stem(tweet) for tweet in df['clean_Tweet']]
+df.head()
+
+
+# In[290]:
+
+
+#Applying Word Tokenizer
+tt = TweetTokenizer()
+df['tokenized']= df['clean_Tweet'].apply(tt.tokenize)
+df.head()
+
+
+# In[291]:
+
+
+# Below is the one way of getting counts of each word
+Counter(" ".join(df["stem_Tweet"]).lower().split()).most_common(150)
+
+
+# In[292]:
+
+
+# make the data frame 
+freq = pd.DataFrame(most_common, columns=['words', 'count'])
+freq.head()
+
+
+# In[293]:
+
+
+#common words in data
+off = [('liber', 640), ('gun', 563), ('like', 507), ('control', 461), ('nt', 454), ('peopl', 383), ('get', 336), ('shit', 332), ('fuck', 327), ('antifa', 316), ('go', 308), ('maga', 305), ('conserv', 287), ('amp', 279), ('know', 277), ('trump', 274), ('think', 251), ('say', 226), ('want', 195), ('make', 193), ('democrat', 190), ('need', 184), ('right', 179), ('lie', 166), ('ass', 161), ('time', 158), ('tri', 156), ('good', 152), ('look', 150), ('even', 141)]
+noff = [('liber', 994), ('gun', 965), ('nt', 861), ('antifa', 854), ('control', 785), ('conserv', 780), ('maga', 732), ('like', 688), ('get', 570), ('peopl', 548), ('know', 465), ('go', 436), ('think', 435), ('trump', 427), ('amp', 398), ('right', 389), ('say', 389), ('want', 366), ('need', 354), ('make', 337), ('good', 317), ('love', 316), ('time', 307), ('-', 306), ('look', 300)]
+df_off = pd.DataFrame(off, columns=['words', 'count'])
+df_noff = pd.DataFrame(noff, columns=['words', 'count'])
+
+
+
+
+# In[294]:
+
+
+df_most_count = pd.merge(df_off,df_noff,on='words',how='inner')
+df_most_count # count_x is offensive; count_y is not offensive
+
+
+# In[295]:
+
+
+labels = ' '.join(df_most_count['words']).split() # make the words as a list 
+labels = labels[0:20]
+count_x = df_most_count['count_x'][0:20]
+count_y = df_most_count['count_y'][0:20]
+x = np.arange(len(labels))  # the label locations
+width = 0.35  # the width of the bars
+
+fig, ax = plt.subplots()
+rects1 = ax.barh(x - width/2, count_x, width, label='Offensive')
+rects2 = ax.barh(x + width/2, count_y, width, label='Not Offensive')
+
+ax.set_xlabel('Count')
+ax.set_title('Most Common Words by Tweets')
+ax.set_yticks(x)
+
+ax.set_yticklabels(labels)
+ax.legend()
+ax.invert_yaxis()
+
+fig.tight_layout()
+plt.show()
+
+
+# In[296]:
+
+
+#Co-occurance and Networking Analysis
+tweets = list(df["clean_Tweet"])
+
+
+# In[297]:
+
+
+tweets[0:50]
+
+
+# In[298]:
+
+
+tweet_nostrip = [x.strip() for x in tweets]
+tweet_nostrip[0:10]
+
+
+# In[299]:
+
+
+len(tweet_nostrip)
+
+
+# In[300]:
+
+
+from nltk import ngrams
+# Tokenize each tweet
+bigram =[]
+for line in tweet_nostrip:
+    token = nltk.word_tokenize(line)
+    bigram.append(list(ngrams(token, 2)))
+
+
+# In[301]:
+
+
+bigram[0:20]
+
+
+# In[302]:
+
+
+# flatten the list
+flat_bigram_list = [item for sublist in bigram for item in sublist ]
+flat_bigram_list[0:5]
+
+
+# In[303]:
+
+
+freq_dist = nltk.FreqDist(flat_bigram_list)
+freq_dist
+
+
+# In[304]:
+
+
+prob_dist = nltk.MLEProbDist(freq_dist)
+number_of_bigrams = freq_dist.N()
+number_of_bigrams
+
+
+# In[305]:
+
+
+bigram_count = freq_dist.most_common(50)
+bigram_count
+
+
+# In[306]:
+
+
+bigram_df = pd.DataFrame(bigram_count,
+                             columns=['bigram', 'count'])
+
+bigram_df
+
+
+# In[309]:
+
+
+import networkx as nx
+import seaborn as sns
+import warnings
+warnings.filterwarnings("ignore")
+
+sns.set(font_scale=1.5)
+sns.set_style("whitegrid")
+# Create dictionary of bigrams and their counts
+d = bigram_df.set_index('bigram').T.to_dict('records')
+# Create network plot 
+G = nx.Graph()
+
+# Create connections between nodes
+for k, v in d[0].items():
+    G.add_edge(k[0], k[1], weight=(v * 10))
+
+#G.add_node("china", weight=100)
+fig, ax = plt.subplots(figsize=(10, 8))
+
+pos = nx.spring_layout(G, k=1)
+
+# Plot networks
+nx.draw_networkx(G, pos,
+                 font_size=16,
+                 width=5,
+                 edge_color='yellow',
+                 node_color='red',
+                 with_labels = False,
+                 ax=ax)
+
+# Create offset labels
+for key, value in pos.items():
+    x, y = value[0]+.135, value[1]+.045
+    ax.text(x, y,
+            s=key,
+            bbox=dict(facecolor='pink', alpha=0.10),
+            horizontalalignment='center', fontsize=11)
+    
+plt.show()
+
+plt.show()
+
+
+# In[308]:
+
+
+# reference: https://pythondata.com/text-analytics-visualization/
+keywords_array=[]
+for index, row in df.iterrows():
+    keywords=row['clean_Tweet'].split(' ')
+    for kw in keywords:
+        keywords_array.append((kw.strip(' '), row['clean_Tweet']))
+kw_df = pd.DataFrame(keywords_array).rename(columns={0:'keyword', 1:'keywords'})
+kw_df.head()
+
+
+# In[310]:
+
+
+len(kw_df)
+
+
+# In[311]:
+
+
+#just for the test, I sliced the dataframe.
+kw_df_sample = kw_df[:1000]
+
+
+# In[315]:
+
+
+from collections import OrderedDict
+import pandas as pd
+
+# Assuming kw_df_sample is a DataFrame with 'keywords' and 'keyword' columns
+document = kw_df_sample['keywords'].tolist()
+names = kw_df_sample['keyword'].tolist()
+
+document_array = [item.split(',') for item in document]
+
+# Function to clean and validate keywords
+def clean_keyword(keyword):
+    return keyword.strip()
+
+# Create a set of cleaned and validated keywords
+unique_keywords = set(clean_keyword(keyword) for sublist in document_array for keyword in sublist)
+
+occurrences = OrderedDict((name, OrderedDict((name, 0) for name in unique_keywords)) for name in unique_keywords)
+
+# Find the co-occurrences:
+for l in document_array:
+    for i in range(len(l)):
+        for item in l[:i] + l[i + 1:]:
+            cleaned_item = clean_keyword(item)
+            if cleaned_item in occurrences[clean_keyword(l[i])]:
+                occurrences[clean_keyword(l[i])][cleaned_item] += 1
+
+co_occur = pd.DataFrame.from_dict(occurrences)
+
+
+# In[316]:
+
+
+co_occur.head()
+
+
+# In[317]:
+
+
+co_occur.shape
+
+
+# In[318]:
+
+
+
+
+
+
