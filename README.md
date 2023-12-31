@@ -1,1 +1,1 @@
-This is a demo OLID NLP model for offencive language detection .
+This is a demo OLID NLP model for social abuse detection .
